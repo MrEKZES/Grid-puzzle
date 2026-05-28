@@ -35,9 +35,6 @@ public:
     void TryMoveTile(int32 Row, int32 Col);
 
     UFUNCTION(BlueprintCallable, Category = "Game Logic")
-    void RotateDirection();
-
-    UFUNCTION(BlueprintCallable, Category = "Game Logic")
     void ResetGame();
 
     UFUNCTION(BlueprintPure, Category = "Game Logic")
@@ -47,17 +44,14 @@ protected:
     void ValidateGridSize();
     void InitializeGrid();
     void SpawnTiles();
+    void GetEmptyTilePosition(int32& OutRow, int32& OutCol);
+    bool IsAdjacent(int32 Row1, int32 Col1, int32 Row2, int32 Col2);
     void SwapTiles(int32 RowA, int32 ColA, int32 RowB, int32 ColB);
     void CheckVictory();
     EColorType GetZoneColor(int32 Row, int32 Col) const;
     void ShuffleTiles(int32 MovesCount = 500);
     bool IsEmptyCell(int32 Row, int32 Col) const;
     TArray<FIntPoint> GetAdjacentEmptyCells(int32 Row, int32 Col);
-    bool IsAdjacentToTile(int32 EmptyRow, int32 EmptyCol, int32 TileRow, int32 TileCol);
-    void HighlightTile(int32 Row, int32 Col, bool bHighlight);
-    void SelectTile(int32 Row, int32 Col);
-    void ClearSelection();
-    void UpdateCurrentDirection(int32 Row, int32 Col);
 
     UPROPERTY()
     TArray<AGridPuzzleTile*> Tiles;
@@ -73,9 +67,6 @@ protected:
         Tiles[GetIndex(Row, Col)] = Tile; 
     }
 
-    int32 SelectedRow;
-    int32 SelectedCol;
-    bool bHasSelectedTile;
-    int32 CurrentDirectionIndex;
-    TArray<FIntPoint> CurrentAvailableEmptyCells;
+    int32 EmptyRow;
+    int32 EmptyCol;
 };
