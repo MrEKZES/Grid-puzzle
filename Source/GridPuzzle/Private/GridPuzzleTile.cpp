@@ -6,19 +6,10 @@
 
 AGridPuzzleTile::AGridPuzzleTile()
 {
-    PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = false;  // ← Устанавливаем false, так как Tick не нужен
     
     MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
     RootComponent = MeshComponent;
-    
-    ClickCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("ClickCollision"));
-    ClickCollision->SetupAttachment(RootComponent);
-    ClickCollision->SetBoxExtent(FVector(50.0f, 50.0f, 10.0f));
-    ClickCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-    ClickCollision->SetCollisionObjectType(ECC_WorldDynamic);
-    ClickCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
-    ClickCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-    ClickCollision->OnClicked.AddDynamic(this, &AGridPuzzleTile::OnClicked);
     
     static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube"));
     if (CubeMesh.Succeeded())
@@ -26,21 +17,34 @@ AGridPuzzleTile::AGridPuzzleTile()
         MeshComponent->SetStaticMesh(CubeMesh.Object);
     }
     
-    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BaseMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-    if (BaseMaterial.Succeeded())
+    MeshComponent->SetRelativeScale3D(FVector(0.9f, 0.9f, 0.1f));
+    MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    
+    ClickCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("ClickCollision"));
+    ClickCollision->SetupAttachment(RootComponent);
+    ClickCollision->SetBoxExtent(FVector(50.0f, 50.0f, 5.0f));
+    ClickCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    ClickCollision->SetCollisionObjectType(ECC_WorldDynamic);
+    ClickCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+    ClickCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+    ClickCollision->OnClicked.AddDynamic(this, &AGridPuzzleTile::OnClicked);
+    
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BaseMaterialFinder(TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
+    if (BaseMaterialFinder.Succeeded())
     {
-        MeshComponent->SetMaterial(0, BaseMaterial.Object);
+        MeshComponent->SetMaterial(0, BaseMaterialFinder.Object);
     }
     
     ColorType = EColorType::Empty;
     GridRow = -1;
     GridCol = -1;
+    DynamicMaterial = nullptr;
 }
 
 void AGridPuzzleTile::BeginPlay()
 {
     Super::BeginPlay();
-    UpdateMaterialColor();
+    // Не вызываем UpdateMaterialColor здесь
 }
 
 void AGridPuzzleTile::Init(int32 Row, int32 Col, EColorType Color)
@@ -49,6 +53,8 @@ void AGridPuzzleTile::Init(int32 Row, int32 Col, EColorType Color)
     GridCol = Col;
     ColorType = Color;
     UpdateMaterialColor();
+    
+    UE_LOG(LogTemp, Log, TEXT("Tile INIT at (%d, %d) with color %d"), Row, Col, (int32)Color);
 }
 
 void AGridPuzzleTile::SetColor(EColorType NewColor)
@@ -81,17 +87,23 @@ void AGridPuzzleTile::UpdateMaterialColor()
 {
     if (!MeshComponent) return;
     
-    DynamicMaterial = MeshComponent->CreateAndSetMaterialInstanceDynamic(0);
-    if (!DynamicMaterial) return;
+    if (!DynamicMaterial)
+    {
+        DynamicMaterial = MeshComponent->CreateAndSetMaterialInstanceDynamic(0);
+        if (!DynamicMaterial) return;
+        UE_LOG(LogTemp, Log, TEXT("Dynamic material created for tile at (%d, %d)"), GridRow, GridCol);
+    }
     
-    FLinearColor Color;
+    FLinearColor Color = FLinearColor::White;
     switch (ColorType)
     {
-        case EColorType::Red:    Color = FLinearColor::Red; break;
+        case EColorType::Red:    Color = FLinearColor::Red;   break;
         case EColorType::Green:  Color = FLinearColor::Green; break;
-        case EColorType::Blue:   Color = FLinearColor::Blue; break;
+        case EColorType::Blue:   Color = FLinearColor::Blue;  break;
+        case EColorType::Black:  Color = FLinearColor::Black; break;
         default:                 Color = FLinearColor::White; break;
     }
     
     DynamicMaterial->SetVectorParameterValue(TEXT("BaseColor"), Color);
+    UE_LOG(LogTemp, Log, TEXT("Color set for tile at (%d, %d)"), GridRow, GridCol);
 }
