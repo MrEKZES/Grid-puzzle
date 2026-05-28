@@ -36,6 +36,8 @@ public:
 	void SetColor(EColorType NewColor);
 	void SetGridPosition(int32 NewRow, int32 NewCol);
 	void MoveToLocation(const FVector& NewLocation);
+	void SetHighlight(bool bHighlight);
+	void UpdateMaterialColor();
     
 	UFUNCTION(BlueprintPure, Category = "Tile")
 	EColorType GetColorType() const { return ColorType; }
@@ -50,8 +52,6 @@ public:
 	void OnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
 
 protected:
-	void UpdateMaterialColor();
-
 	UPROPERTY()
 	class UMaterialInstanceDynamic* DynamicMaterial;
 

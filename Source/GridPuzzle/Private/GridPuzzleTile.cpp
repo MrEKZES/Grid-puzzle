@@ -40,8 +40,6 @@ void AGridPuzzleTile::Init(int32 Row, int32 Col, EColorType Color)
     GridCol = Col;
     ColorType = Color;
     UpdateMaterialColor();
-    
-    UE_LOG(LogTemp, Log, TEXT("Tile INIT at (%d, %d) with color %d"), Row, Col, (int32)Color);
 }
 
 void AGridPuzzleTile::SetColor(EColorType NewColor)
@@ -61,18 +59,37 @@ void AGridPuzzleTile::MoveToLocation(const FVector& NewLocation)
     SetActorLocation(NewLocation);
 }
 
-void AGridPuzzleTile::OnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
+void AGridPuzzleTile::SetHighlight(bool bHighlight)
 {
-    UE_LOG(LogTemp, Warning, TEXT("Tile CLICKED at (%d, %d)!"), GridRow, GridCol);
-    
-    AGridPuzzleGameMode* GameMode = Cast<AGridPuzzleGameMode>(GetWorld()->GetAuthGameMode());
-    if (GameMode)
+    if (!DynamicMaterial)
     {
-        GameMode->TryMoveTile(GridRow, GridCol);
+        DynamicMaterial = MeshComponent->CreateAndSetMaterialInstanceDynamic(0);
+        if (!DynamicMaterial) return;
+    }
+    
+    if (bHighlight)
+    {
+        DynamicMaterial->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::Yellow);
     }
     else
     {
-        UE_LOG(LogTemp, Error, TEXT("GameMode is null!"));
+        UpdateMaterialColor();
+    }
+}
+
+void AGridPuzzleTile::OnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
+{
+    AGridPuzzleGameMode* GameMode = Cast<AGridPuzzleGameMode>(GetWorld()->GetAuthGameMode());
+    if (GameMode)
+    {
+        if (ButtonPressed == EKeys::LeftMouseButton)
+        {
+            GameMode->TryMoveTile(GridRow, GridCol);
+        }
+        else if (ButtonPressed == EKeys::RightMouseButton)
+        {
+            GameMode->RotateDirection();
+        }
     }
 }
 
@@ -84,7 +101,6 @@ void AGridPuzzleTile::UpdateMaterialColor()
     {
         DynamicMaterial = MeshComponent->CreateAndSetMaterialInstanceDynamic(0);
         if (!DynamicMaterial) return;
-        UE_LOG(LogTemp, Log, TEXT("Dynamic material created for tile at (%d, %d)"), GridRow, GridCol);
     }
     
     FLinearColor Color = FLinearColor::White;
@@ -93,10 +109,8 @@ void AGridPuzzleTile::UpdateMaterialColor()
         case EColorType::Red:    Color = FLinearColor::Red;   break;
         case EColorType::Green:  Color = FLinearColor::Green; break;
         case EColorType::Blue:   Color = FLinearColor::Blue;  break;
-        case EColorType::Black:  Color = FLinearColor::Black; break;
         default:                 Color = FLinearColor::White; break;
     }
     
     DynamicMaterial->SetVectorParameterValue(TEXT("BaseColor"), Color);
-    UE_LOG(LogTemp, Log, TEXT("Color set for tile at (%d, %d)"), GridRow, GridCol);
 }
