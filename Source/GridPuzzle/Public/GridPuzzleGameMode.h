@@ -48,10 +48,10 @@ protected:
     bool IsAdjacent(int32 Row1, int32 Col1, int32 Row2, int32 Col2);
     void SwapTiles(int32 RowA, int32 ColA, int32 RowB, int32 ColB);
     void CheckVictory();
-    EColorType GetZoneColor(int32 Row, int32 Col) const;  // ← Изменено: теперь принимает Row и Col
+    EColorType GetZoneColor(int32 Row, int32 Col) const;
     void ShuffleTiles(int32 MovesCount = 1000);
 
-    // Используем одномерный массив для простоты
+    // Используем одномерный массив
     UPROPERTY()
     TArray<AGridPuzzleTile*> Tiles;
     

@@ -6,16 +6,10 @@
 
 AGridPuzzleTile::AGridPuzzleTile()
 {
-    PrimaryActorTick.bCanEverTick = false;  // ← Устанавливаем false, так как Tick не нужен
+    PrimaryActorTick.bCanEverTick = false;
     
     MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
     RootComponent = MeshComponent;
-    
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube"));
-    if (CubeMesh.Succeeded())
-    {
-        MeshComponent->SetStaticMesh(CubeMesh.Object);
-    }
     
     MeshComponent->SetRelativeScale3D(FVector(0.9f, 0.9f, 0.1f));
     MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -29,12 +23,6 @@ AGridPuzzleTile::AGridPuzzleTile()
     ClickCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
     ClickCollision->OnClicked.AddDynamic(this, &AGridPuzzleTile::OnClicked);
     
-    static ConstructorHelpers::FObjectFinder<UMaterialInterface> BaseMaterialFinder(TEXT("/Engine/BasicShapes/BasicShapeMaterial"));
-    if (BaseMaterialFinder.Succeeded())
-    {
-        MeshComponent->SetMaterial(0, BaseMaterialFinder.Object);
-    }
-    
     ColorType = EColorType::Empty;
     GridRow = -1;
     GridCol = -1;
@@ -44,7 +32,6 @@ AGridPuzzleTile::AGridPuzzleTile()
 void AGridPuzzleTile::BeginPlay()
 {
     Super::BeginPlay();
-    // Не вызываем UpdateMaterialColor здесь
 }
 
 void AGridPuzzleTile::Init(int32 Row, int32 Col, EColorType Color)
@@ -76,10 +63,16 @@ void AGridPuzzleTile::MoveToLocation(const FVector& NewLocation)
 
 void AGridPuzzleTile::OnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
 {
+    UE_LOG(LogTemp, Warning, TEXT("Tile CLICKED at (%d, %d)!"), GridRow, GridCol);
+    
     AGridPuzzleGameMode* GameMode = Cast<AGridPuzzleGameMode>(GetWorld()->GetAuthGameMode());
     if (GameMode)
     {
         GameMode->TryMoveTile(GridRow, GridCol);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("GameMode is null!"));
     }
 }
 
