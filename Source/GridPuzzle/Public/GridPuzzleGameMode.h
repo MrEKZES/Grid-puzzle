@@ -49,13 +49,13 @@ protected:
     void SwapTiles(int32 RowA, int32 ColA, int32 RowB, int32 ColB);
     void CheckVictory();
     EColorType GetZoneColor(int32 Row, int32 Col) const;
-    void ShuffleTiles(int32 MovesCount = 1000);
+    void ShuffleTiles(int32 MovesCount = 500);
+    bool IsEmptyCell(int32 Row, int32 Col) const;
+    TArray<FIntPoint> GetAdjacentEmptyCells(int32 Row, int32 Col);
 
-    // Используем одномерный массив
     UPROPERTY()
     TArray<AGridPuzzleTile*> Tiles;
     
-    // Вспомогательные методы для доступа к плиткам
     int32 GetIndex(int32 Row, int32 Col) const { return Row * GridCols + Col; }
     AGridPuzzleTile* GetTile(int32 Row, int32 Col) const 
     { 
