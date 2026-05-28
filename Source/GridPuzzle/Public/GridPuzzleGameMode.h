@@ -2,15 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "ColorTileGameMode.generated.h"
+#include "GridPuzzleGameMode.generated.h"
 
 UCLASS()
-class COLORPUZZLE_API AColorTileGameMode : public AGameModeBase
+class GRIDPUZZLE_API AGridPuzzleGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
 public:
-	AColorTileGameMode();
+	AGridPuzzleGameMode();
 
 	virtual void BeginPlay() override;
 
@@ -21,7 +21,7 @@ public:
 	int32 GridCols;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid Setup")
-	TSubclassOf<class AColorTileActor> TileActorClass;
+	TSubclassOf<class AGridPuzzleTile> TileActorClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid Setup")
 	float TileSize;
@@ -30,22 +30,27 @@ public:
 	FSimpleMulticastDelegate OnVictory;
 
 	UFUNCTION(BlueprintCallable, Category = "Game Logic")
-	void TryMoveTile(int32 Row, int32 Col, FVector WorldClickLocation);
+	void TryMoveTile(int32 Row, int32 Col);
 
 	UFUNCTION(BlueprintCallable, Category = "Game Logic")
 	void ResetGame();
 
+	UFUNCTION(BlueprintPure, Category = "Game Logic")
+	bool IsBlackCell(int32 Row, int32 Col) const;
+
 protected:
+	void ValidateGridSize();
 	void InitializeGrid();
 	void SpawnTiles();
 	void GetEmptyTilePosition(int32& OutRow, int32& OutCol);
 	bool IsAdjacent(int32 Row1, int32 Col1, int32 Row2, int32 Col2);
 	void SwapTiles(int32 RowA, int32 ColA, int32 RowB, int32 ColB);
 	void CheckVictory();
-	bool IsTileInCorrectColumn(class AColorTileActor* Tile, int32 Col);
+	EColorType GetZoneColor(int32 ColIndex) const;
+	void ShuffleTiles(int32 MovesCount = 1000);
 
 	UPROPERTY()
-	TArray<TArray<AColorTileActor*>> Grid;
+	TArray<TArray<AGridPuzzleTile*>> Grid;
 
 	int32 EmptyRow;
 	int32 EmptyCol;

@@ -4,7 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
-#include "ColorTileActor.generated.h"
+#include "GridPuzzleTile.generated.h"
 
 UENUM(BlueprintType)
 enum class EColorType : uint8
@@ -12,17 +12,16 @@ enum class EColorType : uint8
 	Empty UMETA(DisplayName = "White"),
 	Red UMETA(DisplayName = "Red"),
 	Green UMETA(DisplayName = "Green"),
-	Blue UMETA(DisplayName = "Blue"),
-	Black UMETA(DisplayName = "Black")
+	Blue UMETA(DisplayName = "Blue")
 };
 
 UCLASS()
-class COLORPUZZLE_API AColorTileActor : public AActor
+class GRIDPUZZLE_API AGridPuzzleTile : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	AColorTileActor();
+	AGridPuzzleTile();
 
 	virtual void BeginPlay() override;
 
@@ -32,19 +31,19 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UBoxComponent* ClickCollision;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Tile")
-	EColorType ColorType;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Tile")
-	int32 GridRow;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Tile")
-	int32 GridCol;
-
 	void Init(int32 Row, int32 Col, EColorType Color);
 	void SetColor(EColorType NewColor);
 	void SetGridPosition(int32 NewRow, int32 NewCol);
 	void MoveToLocation(const FVector& NewLocation);
+    
+	UFUNCTION(BlueprintPure, Category = "Tile")
+	EColorType GetColorType() const { return ColorType; }
+    
+	UFUNCTION(BlueprintPure, Category = "Tile")
+	int32 GetGridRow() const { return GridRow; }
+    
+	UFUNCTION(BlueprintPure, Category = "Tile")
+	int32 GetGridCol() const { return GridCol; }
 
 	UFUNCTION()
 	void OnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
@@ -54,4 +53,13 @@ protected:
 
 	UPROPERTY()
 	class UMaterialInstanceDynamic* DynamicMaterial;
+
+	UPROPERTY()
+	EColorType ColorType;
+
+	UPROPERTY()
+	int32 GridRow;
+
+	UPROPERTY()
+	int32 GridCol;
 };

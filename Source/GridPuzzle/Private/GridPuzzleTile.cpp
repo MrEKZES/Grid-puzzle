@@ -1,11 +1,10 @@
-﻿#include "ColorTileActor.h"
-#include "ColorTileGameMode.h"
+﻿#include "GridPuzzleTile.h"
+#include "GridPuzzleGameMode.h"
 #include "Components/BoxComponent.h"
 #include "Engine/World.h"
-#include "TimerManager.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
-AColorTileActor::AColorTileActor()
+AGridPuzzleTile::AGridPuzzleTile()
 {
     PrimaryActorTick.bCanEverTick = false;
     
@@ -15,7 +14,11 @@ AColorTileActor::AColorTileActor()
     ClickCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("ClickCollision"));
     ClickCollision->SetupAttachment(RootComponent);
     ClickCollision->SetBoxExtent(FVector(50.0f, 50.0f, 10.0f));
-    ClickCollision->OnClicked.AddDynamic(this, &AColorTileActor::OnClicked);
+    ClickCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    ClickCollision->SetCollisionObjectType(ECC_WorldDynamic);
+    ClickCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+    ClickCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+    ClickCollision->OnClicked.AddDynamic(this, &AGridPuzzleTile::OnClicked);
     
     static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube"));
     if (CubeMesh.Succeeded())
@@ -34,13 +37,13 @@ AColorTileActor::AColorTileActor()
     GridCol = -1;
 }
 
-void AColorTileActor::BeginPlay()
+void AGridPuzzleTile::BeginPlay()
 {
     Super::BeginPlay();
     UpdateMaterialColor();
 }
 
-void AColorTileActor::Init(int32 Row, int32 Col, EColorType Color)
+void AGridPuzzleTile::Init(int32 Row, int32 Col, EColorType Color)
 {
     GridRow = Row;
     GridCol = Col;
@@ -48,34 +51,33 @@ void AColorTileActor::Init(int32 Row, int32 Col, EColorType Color)
     UpdateMaterialColor();
 }
 
-void AColorTileActor::SetColor(EColorType NewColor)
+void AGridPuzzleTile::SetColor(EColorType NewColor)
 {
     ColorType = NewColor;
     UpdateMaterialColor();
 }
 
-void AColorTileActor::SetGridPosition(int32 NewRow, int32 NewCol)
+void AGridPuzzleTile::SetGridPosition(int32 NewRow, int32 NewCol)
 {
     GridRow = NewRow;
     GridCol = NewCol;
 }
 
-void AColorTileActor::MoveToLocation(const FVector& NewLocation)
+void AGridPuzzleTile::MoveToLocation(const FVector& NewLocation)
 {
     SetActorLocation(NewLocation);
 }
 
-void AColorTileActor::OnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
+void AGridPuzzleTile::OnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
 {
-    AColorTileGameMode* GameMode = Cast<AColorTileGameMode>(GetWorld()->GetAuthGameMode());
+    AGridPuzzleGameMode* GameMode = Cast<AGridPuzzleGameMode>(GetWorld()->GetAuthGameMode());
     if (GameMode)
     {
-        FVector ClickLocation = GetActorLocation();
-        GameMode->TryMoveTile(GridRow, GridCol, ClickLocation);
+        GameMode->TryMoveTile(GridRow, GridCol);
     }
 }
 
-void AColorTileActor::UpdateMaterialColor()
+void AGridPuzzleTile::UpdateMaterialColor()
 {
     if (!MeshComponent) return;
     
@@ -88,7 +90,6 @@ void AColorTileActor::UpdateMaterialColor()
         case EColorType::Red:    Color = FLinearColor::Red; break;
         case EColorType::Green:  Color = FLinearColor::Green; break;
         case EColorType::Blue:   Color = FLinearColor::Blue; break;
-        case EColorType::Black:  Color = FLinearColor::Black; break;
         default:                 Color = FLinearColor::White; break;
     }
     
