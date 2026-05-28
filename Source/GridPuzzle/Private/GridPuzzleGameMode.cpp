@@ -2,7 +2,7 @@
 #include "GridPuzzleTile.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/GameplayStatics.h"
+#include "Math/UnrealMathUtility.h"
 
 AGridPuzzleGameMode::AGridPuzzleGameMode()
 {
@@ -41,37 +41,44 @@ bool AGridPuzzleGameMode::IsBlackCell(int32 Row, int32 Col) const
     return (OneBasedRow % 2 == 0 && OneBasedCol % 2 == 0);
 }
 
-void AGridPuzzleGameMode::InitializeGrid()
+EColorType AGridPuzzleGameMode::GetZoneColor(int32 Row, int32 Col) const
 {
-    Grid.SetNum(GridRows);
-    for (int32 i = 0; i < GridRows; i++)
+    // Чёрные клетки возвращаем как Black
+    if (IsBlackCell(Row, Col))
+        return EColorType::Black;
+    
+    int32 OneBasedCol = Col + 1;
+    
+    // Только нечётные столбцы имеют цветные зоны
+    if (OneBasedCol % 2 == 1)  // Нечётный столбец
     {
-        Grid[i].SetNum(GridCols);
-        for (int32 j = 0; j < GridCols; j++)
-        {
-            Grid[i][j] = nullptr;
-        }
+        // Первый столбец (1) - красный
+        if (OneBasedCol == 1)
+            return EColorType::Red;
+        
+        // Средний столбец - зелёный
+        int32 MidCol = (GridCols + 1) / 2;
+        if (OneBasedCol == MidCol)
+            return EColorType::Green;
+        
+        // Последний столбец - синий
+        if (OneBasedCol == GridCols)
+            return EColorType::Blue;
     }
+    
+    // Все остальные клетки - пустые (белые)
+    return EColorType::Empty;
 }
 
-EColorType AGridPuzzleGameMode::GetZoneColor(int32 ColIndex) const
+void AGridPuzzleGameMode::InitializeGrid()
 {
-    int32 OneBasedCol = ColIndex + 1;
+    int32 TotalTiles = GridRows * GridCols;
+    Tiles.SetNum(TotalTiles);
     
-    // Красная зона - первый столбец
-    if (OneBasedCol == 1)
-        return EColorType::Red;
-    
-    // Синяя зона - последний столбец
-    if (OneBasedCol == GridCols)
-        return EColorType::Blue;
-    
-    // Зелёная зона - средний столбец
-    int32 MidCol = (GridCols + 1) / 2;
-    if (OneBasedCol == MidCol)
-        return EColorType::Green;
-    
-    return EColorType::Empty;
+    for (int32 i = 0; i < TotalTiles; i++)
+    {
+        Tiles[i] = nullptr;
+    }
 }
 
 void AGridPuzzleGameMode::SpawnTiles()
@@ -87,66 +94,84 @@ void AGridPuzzleGameMode::SpawnTiles()
     // Подсчёт количества цветных клеток по зонам
     int32 RedCount = 0, GreenCount = 0, BlueCount = 0;
     
+    // Сначала проходим по всем клеткам, чтобы подсчитать количество нужных цветов
     for (int32 i = 0; i < GridRows; i++)
     {
         for (int32 j = 0; j < GridCols; j++)
         {
+            // Пропускаем чёрные клетки
             if (IsBlackCell(i, j)) continue;
             
+            // Добавляем позицию в список
             NonBlackPositions.Add(FIntPoint(i, j));
-            EColorType ZoneColor = GetZoneColor(j);
             
-            if (ZoneColor == EColorType::Red) RedCount++;
-            else if (ZoneColor == EColorType::Green) GreenCount++;
-            else if (ZoneColor == EColorType::Blue) BlueCount++;
+            // Определяем, какой цвет должен быть в этой клетке при победе
+            EColorType RequiredColor = GetZoneColor(i, j);
+            
+            // Считаем, сколько клеток каждого цвета нужно создать
+            if (RequiredColor == EColorType::Red)
+                RedCount++;
+            else if (RequiredColor == EColorType::Green)
+                GreenCount++;
+            else if (RequiredColor == EColorType::Blue)
+                BlueCount++;
         }
     }
     
-    // Добавляем цветные плитки
-    for (int32 i = 0; i < RedCount; i++) ColorsToPlace.Add(EColorType::Red);
-    for (int32 i = 0; i < GreenCount; i++) ColorsToPlace.Add(EColorType::Green);
-    for (int32 i = 0; i < BlueCount; i++) ColorsToPlace.Add(EColorType::Blue);
+    // Добавляем цветные плитки в соответствии с подсчитанным количеством
+    for (int32 i = 0; i < RedCount; i++) 
+        ColorsToPlace.Add(EColorType::Red);
+    for (int32 i = 0; i < GreenCount; i++) 
+        ColorsToPlace.Add(EColorType::Green);
+    for (int32 i = 0; i < BlueCount; i++) 
+        ColorsToPlace.Add(EColorType::Blue);
     
-    // Остальные - пустые (белые)
-    int32 TotalTiles = NonBlackPositions.Num();
+    // Остальные клетки (не цветные зоны) будут пустыми (белыми)
+    int32 TotalNonBlackCells = NonBlackPositions.Num();
     int32 ColoredCount = ColorsToPlace.Num();
-    for (int32 i = ColoredCount; i < TotalTiles - 1; i++)
+    
+    // Добавляем пустые клетки (на одну меньше, чем нужно, так как одна будет пустой для перемещений)
+    for (int32 i = ColoredCount; i < TotalNonBlackCells - 1; i++)
     {
         ColorsToPlace.Add(EColorType::Empty);
     }
     
-    // Одна пустая клетка для перемещений
+    // Добавляем последнюю пустую клетку (для возможности перемещений)
     ColorsToPlace.Add(EColorType::Empty);
     
-    // Перемешиваем цвета
+    // Перемешиваем цвета случайным образом
     for (int32 i = ColorsToPlace.Num() - 1; i > 0; i--)
     {
         int32 j = FMath::RandRange(0, i);
         ColorsToPlace.Swap(i, j);
     }
     
-    // Создаём плитки
+    // Вычисляем смещение для центрирования поля
     float OffsetX = (GridCols - 1) * TileSize * 0.5f;
     float OffsetY = (GridRows - 1) * TileSize * 0.5f;
     
+    // Создаём плитки только для не-чёрных клеток
     for (int32 idx = 0; idx < NonBlackPositions.Num(); idx++)
     {
         int32 Row = NonBlackPositions[idx].X;
         int32 Col = NonBlackPositions[idx].Y;
         
+        // Вычисляем позицию для спавна
         FVector Location(
             Col * TileSize - OffsetX,
             Row * TileSize - OffsetY,
             0.0f
         );
         
+        // Спавним плитку
         AGridPuzzleTile* Tile = World->SpawnActor<AGridPuzzleTile>(TileActorClass, Location, FRotator::ZeroRotator);
         if (Tile)
         {
             EColorType Color = ColorsToPlace[idx];
             Tile->Init(Row, Col, Color);
-            Grid[Row][Col] = Tile;
+            SetTile(Row, Col, Tile);
             
+            // Запоминаем позицию пустой клетки
             if (Color == EColorType::Empty)
             {
                 EmptyRow = Row;
@@ -154,6 +179,9 @@ void AGridPuzzleGameMode::SpawnTiles()
             }
         }
     }
+    
+    UE_LOG(LogTemp, Warning, TEXT("Spawned %d tiles. Red: %d, Green: %d, Blue: %d"), 
+        NonBlackPositions.Num(), RedCount, GreenCount, BlueCount);
 }
 
 void AGridPuzzleGameMode::GetEmptyTilePosition(int32& OutRow, int32& OutCol)
@@ -169,37 +197,39 @@ bool AGridPuzzleGameMode::IsAdjacent(int32 Row1, int32 Col1, int32 Row2, int32 C
 
 void AGridPuzzleGameMode::SwapTiles(int32 RowA, int32 ColA, int32 RowB, int32 ColB)
 {
-    if (!Grid[RowA][ColA] || !Grid[RowB][ColB]) return;
+    AGridPuzzleTile* TileA = GetTile(RowA, ColA);
+    AGridPuzzleTile* TileB = GetTile(RowB, ColB);
     
-    // Swap grid pointers
-    AGridPuzzleTile* Temp = Grid[RowA][ColA];
-    Grid[RowA][ColA] = Grid[RowB][ColB];
-    Grid[RowB][ColB] = Temp;
+    if (!TileA || !TileB) return;
+    
+    // Swap in array
+    SetTile(RowA, ColA, TileB);
+    SetTile(RowB, ColB, TileA);
     
     // Update tile positions
-    Grid[RowA][ColA]->SetGridPosition(RowA, ColA);
-    Grid[RowB][ColB]->SetGridPosition(RowB, ColB);
+    TileA->SetGridPosition(RowB, ColB);
+    TileB->SetGridPosition(RowA, ColA);
     
     // Animate movement
     float OffsetX = (GridCols - 1) * TileSize * 0.5f;
     float OffsetY = (GridRows - 1) * TileSize * 0.5f;
     
-    FVector NewPosA(ColA * TileSize - OffsetX, RowA * TileSize - OffsetY, 0.0f);
-    FVector NewPosB(ColB * TileSize - OffsetX, RowB * TileSize - OffsetY, 0.0f);
+    FVector NewPosA(ColB * TileSize - OffsetX, RowB * TileSize - OffsetY, 0.0f);
+    FVector NewPosB(ColA * TileSize - OffsetX, RowA * TileSize - OffsetY, 0.0f);
     
-    Grid[RowA][ColA]->MoveToLocation(NewPosA);
-    Grid[RowB][ColB]->MoveToLocation(NewPosB);
+    TileA->MoveToLocation(NewPosA);
+    TileB->MoveToLocation(NewPosB);
     
     // Update empty tile tracking
-    if (Grid[RowA][ColA]->GetColorType() == EColorType::Empty)
-    {
-        EmptyRow = RowA;
-        EmptyCol = ColA;
-    }
-    else if (Grid[RowB][ColB]->GetColorType() == EColorType::Empty)
+    if (TileA->GetColorType() == EColorType::Empty)
     {
         EmptyRow = RowB;
         EmptyCol = ColB;
+    }
+    else if (TileB->GetColorType() == EColorType::Empty)
+    {
+        EmptyRow = RowA;
+        EmptyCol = ColA;
     }
 }
 
@@ -212,7 +242,8 @@ void AGridPuzzleGameMode::TryMoveTile(int32 Row, int32 Col)
     if (IsBlackCell(Row, Col)) return;
     
     // Проверка существования плитки
-    if (!Grid[Row][Col]) return;
+    AGridPuzzleTile* Tile = GetTile(Row, Col);
+    if (!Tile) return;
     
     // Проверка соседства с пустой клеткой
     if (IsAdjacent(Row, Col, EmptyRow, EmptyCol))
@@ -228,26 +259,33 @@ void AGridPuzzleGameMode::CheckVictory()
     {
         for (int32 j = 0; j < GridCols; j++)
         {
+            // Пропускаем чёрные клетки
             if (IsBlackCell(i, j)) continue;
             
-            AGridPuzzleTile* Tile = Grid[i][j];
+            AGridPuzzleTile* Tile = GetTile(i, j);
             if (!Tile) continue;
             
             EColorType TileColor = Tile->GetColorType();
+            
+            // Пустые клетки пропускаем
             if (TileColor == EColorType::Empty) continue;
             
-            EColorType RequiredColor = GetZoneColor(j);
-            if (TileColor != RequiredColor)
+            // Получаем требуемый цвет для этой позиции
+            EColorType RequiredColor = GetZoneColor(i, j);
+            
+            // Если это цветная зона (не Empty и не Black), проверяем соответствие
+            if (RequiredColor != EColorType::Empty && RequiredColor != EColorType::Black)
             {
-                return;
+                if (TileColor != RequiredColor)
+                {
+                    return; // Не победа
+                }
             }
         }
     }
     
     // Победа!
     OnVictory.Broadcast();
-    
-    // Лог в консоль
     UE_LOG(LogTemp, Warning, TEXT("VICTORY! All tiles are in correct columns!"));
 }
 
@@ -280,19 +318,16 @@ void AGridPuzzleGameMode::ShuffleTiles(int32 MovesCount)
 void AGridPuzzleGameMode::ResetGame()
 {
     // Уничтожаем все плитки
-    for (int32 i = 0; i < GridRows; i++)
+    for (int32 i = 0; i < Tiles.Num(); i++)
     {
-        for (int32 j = 0; j < GridCols; j++)
+        if (Tiles[i])
         {
-            if (Grid[i][j])
-            {
-                Grid[i][j]->Destroy();
-                Grid[i][j] = nullptr;
-            }
+            Tiles[i]->Destroy();
+            Tiles[i] = nullptr;
         }
     }
     
-    Grid.Empty();
+    Tiles.Empty();
     EmptyRow = -1;
     EmptyCol = -1;
     

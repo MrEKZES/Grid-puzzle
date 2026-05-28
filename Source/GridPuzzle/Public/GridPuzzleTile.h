@@ -12,7 +12,8 @@ enum class EColorType : uint8
 	Empty UMETA(DisplayName = "White"),
 	Red UMETA(DisplayName = "Red"),
 	Green UMETA(DisplayName = "Green"),
-	Blue UMETA(DisplayName = "Blue")
+	Blue UMETA(DisplayName = "Blue"),
+	Black UMETA(DisplayName = "Black")
 };
 
 UCLASS()
