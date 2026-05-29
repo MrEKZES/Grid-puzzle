@@ -9,16 +9,17 @@
 UENUM(BlueprintType)
 enum class EColorType : uint8
 {
-	Empty UMETA(DisplayName = "White"),
-	Red UMETA(DisplayName = "Red"),
-	Orange UMETA(DisplayName = "Orange"),
-	Yellow UMETA(DisplayName = "Yellow"),
-	Green UMETA(DisplayName = "Green"),
-	Turquoise UMETA(DisplayName = "Turquoise"),
-	Cyan UMETA(DisplayName = "Cyan"),
-	Purple UMETA(DisplayName = "Purple"),
-	Pink UMETA(DisplayName = "Pink"),
-	Blue UMETA(DisplayName = "Blue")
+	Empty   UMETA(DisplayName = "Empty"),
+	Red     UMETA(DisplayName = "Red"),
+	Orange  UMETA(DisplayName = "Orange"),
+	Yellow  UMETA(DisplayName = "Yellow"),
+	Green   UMETA(DisplayName = "Green"),
+	Cyan    UMETA(DisplayName = "Cyan"),
+	Blue    UMETA(DisplayName = "Blue"),
+	Purple  UMETA(DisplayName = "Purple"),
+	Pink    UMETA(DisplayName = "Pink"),
+	Magenta UMETA(DisplayName = "Magenta"),
+	White   UMETA(DisplayName = "White")
 };
 
 UCLASS()
@@ -30,17 +31,16 @@ public:
 	AGridPuzzleTile();
 
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* MeshComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	UBoxComponent* ClickCollision;
-
 	void Init(int32 Row, int32 Col, EColorType Color);
 	void SetColor(EColorType NewColor);
 	void SetGridPosition(int32 NewRow, int32 NewCol);
-	void MoveToLocation(const FVector& NewLocation);
+	void SetTargetPosition(const FVector& NewTarget);
+	bool IsMoving() const { return bIsMoving; }
     
 	UFUNCTION(BlueprintPure, Category = "Tile")
 	EColorType GetColorType() const { return ColorType; }
@@ -50,9 +50,6 @@ public:
     
 	UFUNCTION(BlueprintPure, Category = "Tile")
 	int32 GetGridCol() const { return GridCol; }
-
-	UFUNCTION()
-	void OnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
 
 protected:
 	void UpdateMaterialColor();
@@ -68,4 +65,13 @@ protected:
 
 	UPROPERTY()
 	int32 GridCol;
+
+	UPROPERTY()
+	bool bIsMoving;
+
+	UPROPERTY()
+	FVector TargetLocation;
+
+	UPROPERTY()
+	float MoveSpeed;
 };

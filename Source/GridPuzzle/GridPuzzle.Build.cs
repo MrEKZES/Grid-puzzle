@@ -19,6 +19,7 @@ public class GridPuzzle : ModuleRules
 			"CoreUObject", 
 			"Engine", 
 			"InputCore",
+			"UMG",           // <--- ДОБАВЛЕНО для виджетов
 			"Slate",
 			"SlateCore"
 		});

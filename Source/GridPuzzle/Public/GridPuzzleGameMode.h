@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "Blueprint/UserWidget.h"
 #include "GridPuzzleTile.h"
 #include "GridPuzzleGameMode.generated.h"
 
@@ -16,18 +17,22 @@ public:
     AGridPuzzleGameMode();
 
     virtual void BeginPlay() override;
+    virtual void Tick(float DeltaTime) override;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid Setup")
     int32 GridSize;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid Setup")
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Grid Setup")
     TSubclassOf<AGridPuzzleTile> TileActorClass;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid Setup")
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Grid Setup")
     TSubclassOf<AActor> ColumnIndicatorClass;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid Setup")
     float TileSize;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "UI")
+    TSubclassOf<UUserWidget> VictoryWidgetClass;
 
     FOnVictoryDelegate OnVictory;
 
@@ -37,19 +42,26 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Game Logic")
     void ResetGame();
 
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void ShowVictoryWidget();
+
 protected:
     void ValidateGridSize();
     void InitializeGrid();
     void SpawnTiles();
     void SpawnColumnIndicators();
-    bool IsAdjacent(int32 Row1, int32 Col1, int32 Row2, int32 Col2);
+    void UpdateAllPositions();
     void SwapTiles(int32 RowA, int32 ColA, int32 RowB, int32 ColB);
     void CheckVictory();
     EColorType GetColumnColor(int32 ColIndex) const;
-    void ShuffleTiles(int32 MovesCount = 1000);
+    void ShuffleTiles(int32 MovesCount = 500);
+    void ProcessMouseClick();
 
     UPROPERTY()
     TArray<AGridPuzzleTile*> Tiles;
+    
+    UPROPERTY()
+    UUserWidget* VictoryWidget;
     
     int32 GetIndex(int32 Row, int32 Col) const { return Row * GridSize + Col; }
     AGridPuzzleTile* GetTile(int32 Row, int32 Col) const 
@@ -64,4 +76,7 @@ protected:
 
     int32 EmptyRow;
     int32 EmptyCol;
+    
+    bool bLastClickProcessed;
+    bool bGameEnded;
 };
