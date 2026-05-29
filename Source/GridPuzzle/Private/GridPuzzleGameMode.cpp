@@ -4,11 +4,12 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "Math/UnrealMathUtility.h"
+#include "Components/StaticMeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 AGridPuzzleGameMode::AGridPuzzleGameMode()
 {
-    GridRows = 5;
-    GridCols = 5;
+    GridSize = 3;
     TileSize = 110.0f;
     EmptyRow = -1;
     EmptyCol = -1;
@@ -26,7 +27,6 @@ void AGridPuzzleGameMode::BeginPlay()
         {
             DefaultPawn->Destroy();
             PlayerController->UnPossess();
-            UE_LOG(LogTemp, Log, TEXT("DefaultPawn destroyed"));
         }
         
         PlayerController->bShowMouseCursor = true;
@@ -37,74 +37,91 @@ void AGridPuzzleGameMode::BeginPlay()
     ValidateGridSize();
     InitializeGrid();
     SpawnTiles();
-    ShuffleTiles(500);
+    SpawnColumnIndicators();
+    ShuffleTiles(1000);
 }
 
 void AGridPuzzleGameMode::ValidateGridSize()
 {
-    if (GridRows < 5) GridRows = 5;
-    if (GridCols < 5) GridCols = 5;
-    
-    int32 MaxSize = FMath::Max(GridRows, GridCols);
-    if (MaxSize % 2 == 0) MaxSize++;
-    
-    GridRows = MaxSize;
-    GridCols = MaxSize;
+    if (GridSize < 2) GridSize = 2;
+    if (GridSize > 9) GridSize = 9;
 }
 
-bool AGridPuzzleGameMode::IsBlackCell(int32 Row, int32 Col) const
+bool AGridPuzzleGameMode::IsAdjacent(int32 Row1, int32 Col1, int32 Row2, int32 Col2)
 {
-    int32 OneBasedRow = Row + 1;
-    int32 OneBasedCol = Col + 1;
-    return (OneBasedRow % 2 == 0 && OneBasedCol % 2 == 0);
+    return (FMath::Abs(Row1 - Row2) + FMath::Abs(Col1 - Col2)) == 1;
 }
 
-bool AGridPuzzleGameMode::IsEmptyCell(int32 Row, int32 Col) const
+EColorType AGridPuzzleGameMode::GetColumnColor(int32 ColIndex) const
 {
-    if (IsBlackCell(Row, Col)) return false;
+    int32 OneBasedCol = ColIndex + 1;
+    int32 TotalCols = GridSize;
     
-    int32 OneBasedCol = Col + 1;
-    int32 OneBasedRow = Row + 1;
+    // Первый столбец - красный
+    if (OneBasedCol == 1)
+        return EColorType::Red;
     
-    // Чётные столбцы на нечётных строках - пустые клетки
-    if (OneBasedCol % 2 == 0 && OneBasedRow % 2 == 1)
-        return true;
+    // Последний столбец - синий
+    if (OneBasedCol == TotalCols)
+        return EColorType::Blue;
     
-    return false;
-}
-
-EColorType AGridPuzzleGameMode::GetZoneColor(int32 Row, int32 Col) const
-{
-    if (IsBlackCell(Row, Col))
-        return EColorType::Black;
-    
-    int32 OneBasedCol = Col + 1;
-    int32 OneBasedRow = Row + 1;
-    
-    // Чётные столбцы на нечётных строках - пустые клетки
-    if (OneBasedCol % 2 == 0 && OneBasedRow % 2 == 1)
-        return EColorType::Empty;
-    
-    // Нечётные столбцы - цветные зоны
-    if (OneBasedCol % 2 == 1)
+    // Цвета для разных размеров поля
+    if (TotalCols == 3)
     {
-        if (OneBasedCol == 1)
-            return EColorType::Red;
-        
-        int32 MidCol = (GridCols + 1) / 2;
-        if (OneBasedCol == MidCol)
-            return EColorType::Green;
-        
-        if (OneBasedCol == GridCols)
-            return EColorType::Blue;
+        if (OneBasedCol == 2) return EColorType::Green;
+    }
+    else if (TotalCols == 4)
+    {
+        if (OneBasedCol == 2) return EColorType::Orange;
+        if (OneBasedCol == 3) return EColorType::Cyan;
+    }
+    else if (TotalCols == 5)
+    {
+        if (OneBasedCol == 2) return EColorType::Orange;
+        if (OneBasedCol == 3) return EColorType::Yellow;
+        if (OneBasedCol == 4) return EColorType::Cyan;
+    }
+    else if (TotalCols == 6)
+    {
+        if (OneBasedCol == 2) return EColorType::Orange;
+        if (OneBasedCol == 3) return EColorType::Yellow;
+        if (OneBasedCol == 4) return EColorType::Green;
+        if (OneBasedCol == 5) return EColorType::Cyan;
+    }
+    else if (TotalCols == 7)
+    {
+        if (OneBasedCol == 2) return EColorType::Orange;
+        if (OneBasedCol == 3) return EColorType::Yellow;
+        if (OneBasedCol == 4) return EColorType::Green;
+        if (OneBasedCol == 5) return EColorType::Cyan;
+        if (OneBasedCol == 6) return EColorType::Purple;
+    }
+    else if (TotalCols == 8)
+    {
+        if (OneBasedCol == 2) return EColorType::Orange;
+        if (OneBasedCol == 3) return EColorType::Yellow;
+        if (OneBasedCol == 4) return EColorType::Green;
+        if (OneBasedCol == 5) return EColorType::Turquoise;
+        if (OneBasedCol == 6) return EColorType::Cyan;
+        if (OneBasedCol == 7) return EColorType::Purple;
+    }
+    else if (TotalCols == 9)
+    {
+        if (OneBasedCol == 2) return EColorType::Orange;
+        if (OneBasedCol == 3) return EColorType::Yellow;
+        if (OneBasedCol == 4) return EColorType::Green;
+        if (OneBasedCol == 5) return EColorType::Turquoise;
+        if (OneBasedCol == 6) return EColorType::Cyan;
+        if (OneBasedCol == 7) return EColorType::Purple;
+        if (OneBasedCol == 8) return EColorType::Pink;
     }
     
-    return EColorType::Empty;
+    return EColorType::Green;
 }
 
 void AGridPuzzleGameMode::InitializeGrid()
 {
-    int32 TotalTiles = GridRows * GridCols;
+    int32 TotalTiles = GridSize * GridSize;
     Tiles.SetNum(TotalTiles);
     
     for (int32 i = 0; i < TotalTiles; i++)
@@ -113,30 +130,58 @@ void AGridPuzzleGameMode::InitializeGrid()
     }
 }
 
-TArray<FIntPoint> AGridPuzzleGameMode::GetAdjacentEmptyCells(int32 Row, int32 Col)
+void AGridPuzzleGameMode::SpawnColumnIndicators()
 {
-    TArray<FIntPoint> EmptyCells;
-    int32 Directions[4][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    if (!ColumnIndicatorClass) return;
     
-    for (int32 i = 0; i < 4; i++)
+    UWorld* World = GetWorld();
+    if (!World) return;
+    
+    float OffsetX = (GridSize - 1) * TileSize * 0.5f;
+    float OffsetY = (GridSize - 1) * TileSize * 0.5f;
+    float IndicatorZ = 30.0f;
+    
+    for (int32 j = 0; j < GridSize; j++)
     {
-        int32 NewRow = Row + Directions[i][0];
-        int32 NewCol = Col + Directions[i][1];
+        EColorType ColumnColor = GetColumnColor(j);
         
-        if (NewRow >= 0 && NewRow < GridRows && NewCol >= 0 && NewCol < GridCols)
+        FLinearColor IndicatorColor = FLinearColor::White;
+        switch (ColumnColor)
         {
-            if (!IsBlackCell(NewRow, NewCol))
+            case EColorType::Red:       IndicatorColor = FLinearColor(1.0f, 0.0f, 0.0f); break;
+            case EColorType::Orange:    IndicatorColor = FLinearColor(1.0f, 0.5f, 0.0f); break;
+            case EColorType::Yellow:    IndicatorColor = FLinearColor(1.0f, 1.0f, 0.0f); break;
+            case EColorType::Green:     IndicatorColor = FLinearColor(0.0f, 1.0f, 0.0f); break;
+            case EColorType::Turquoise: IndicatorColor = FLinearColor(0.6f, 0.3f, 0.0f); break; // Коричневый
+            case EColorType::Cyan:      IndicatorColor = FLinearColor(0.0f, 1.0f, 1.0f); break;
+            case EColorType::Purple:    IndicatorColor = FLinearColor(0.8f, 0.2f, 1.0f); break;
+            case EColorType::Pink:      IndicatorColor = FLinearColor(1.0f, 0.6f, 0.8f); break;
+            case EColorType::Blue:      IndicatorColor = FLinearColor(0.0f, 0.0f, 1.0f); break;
+            default:                    IndicatorColor = FLinearColor(1.0f, 1.0f, 1.0f); break;
+        }
+        
+        FVector Location(
+            j * TileSize - OffsetX,
+            -OffsetY - TileSize * 0.8f,
+            IndicatorZ
+        );
+        
+        AActor* Indicator = World->SpawnActor<AActor>(ColumnIndicatorClass, Location, FRotator::ZeroRotator);
+        if (Indicator)
+        {
+            Indicator->SetActorScale3D(FVector(0.8f, 0.3f, 0.2f));
+            
+            UStaticMeshComponent* MeshComp = Indicator->FindComponentByClass<UStaticMeshComponent>();
+            if (MeshComp)
             {
-                AGridPuzzleTile* Tile = GetTile(NewRow, NewCol);
-                if (Tile && Tile->GetColorType() == EColorType::Empty)
+                UMaterialInstanceDynamic* DynMaterial = MeshComp->CreateAndSetMaterialInstanceDynamic(0);
+                if (DynMaterial)
                 {
-                    EmptyCells.Add(FIntPoint(NewRow, NewCol));
+                    DynMaterial->SetVectorParameterValue(TEXT("BaseColor"), IndicatorColor);
                 }
             }
         }
     }
-    
-    return EmptyCells;
 }
 
 void AGridPuzzleGameMode::SpawnTiles()
@@ -146,61 +191,41 @@ void AGridPuzzleGameMode::SpawnTiles()
     UWorld* World = GetWorld();
     if (!World) return;
     
-    TArray<FIntPoint> NonBlackPositions;
+    TArray<FIntPoint> AllPositions;
     TArray<EColorType> ColorsToPlace;
     
-    // Подсчёт количества цветных клеток по зонам
-    int32 RedCount = 0, GreenCount = 0, BlueCount = 0;
-    
-    for (int32 i = 0; i < GridRows; i++)
+    for (int32 i = 0; i < GridSize; i++)
     {
-        for (int32 j = 0; j < GridCols; j++)
+        for (int32 j = 0; j < GridSize; j++)
         {
-            if (IsBlackCell(i, j)) continue;
-            
-            NonBlackPositions.Add(FIntPoint(i, j));
-            EColorType RequiredColor = GetZoneColor(i, j);
-            
-            if (RequiredColor == EColorType::Red)
-                RedCount++;
-            else if (RequiredColor == EColorType::Green)
-                GreenCount++;
-            else if (RequiredColor == EColorType::Blue)
-                BlueCount++;
+            AllPositions.Add(FIntPoint(i, j));
         }
     }
     
-    // Добавляем цветные плитки
-    for (int32 i = 0; i < RedCount; i++) 
-        ColorsToPlace.Add(EColorType::Red);
-    for (int32 i = 0; i < GreenCount; i++) 
-        ColorsToPlace.Add(EColorType::Green);
-    for (int32 i = 0; i < BlueCount; i++) 
-        ColorsToPlace.Add(EColorType::Blue);
-    
-    // Добавляем пустые клетки
-    int32 TotalNonBlackCells = NonBlackPositions.Num();
-    int32 ColoredCount = ColorsToPlace.Num();
-    
-    for (int32 i = ColoredCount; i < TotalNonBlackCells; i++)
+    for (int32 j = 0; j < GridSize; j++)
     {
-        ColorsToPlace.Add(EColorType::Empty);
+        EColorType ColumnColor = GetColumnColor(j);
+        for (int32 i = 0; i < GridSize; i++)
+        {
+            ColorsToPlace.Add(ColumnColor);
+        }
     }
     
-    // Перемешиваем цвета
+    ColorsToPlace[ColorsToPlace.Num() - 1] = EColorType::Empty;
+    
     for (int32 i = ColorsToPlace.Num() - 1; i > 0; i--)
     {
         int32 j = FMath::RandRange(0, i);
         ColorsToPlace.Swap(i, j);
     }
     
-    float OffsetX = (GridCols - 1) * TileSize * 0.5f;
-    float OffsetY = (GridRows - 1) * TileSize * 0.5f;
+    float OffsetX = (GridSize - 1) * TileSize * 0.5f;
+    float OffsetY = (GridSize - 1) * TileSize * 0.5f;
     
-    for (int32 idx = 0; idx < NonBlackPositions.Num(); idx++)
+    for (int32 idx = 0; idx < AllPositions.Num(); idx++)
     {
-        int32 Row = NonBlackPositions[idx].X;
-        int32 Col = NonBlackPositions[idx].Y;
+        int32 Row = AllPositions[idx].X;
+        int32 Col = AllPositions[idx].Y;
         
         FVector Location(
             Col * TileSize - OffsetX,
@@ -222,9 +247,6 @@ void AGridPuzzleGameMode::SpawnTiles()
             }
         }
     }
-    
-    UE_LOG(LogTemp, Warning, TEXT("Spawned %d tiles. Red: %d, Green: %d, Blue: %d"), 
-        NonBlackPositions.Num(), RedCount, GreenCount, BlueCount);
 }
 
 void AGridPuzzleGameMode::SwapTiles(int32 RowA, int32 ColA, int32 RowB, int32 ColB)
@@ -234,141 +256,97 @@ void AGridPuzzleGameMode::SwapTiles(int32 RowA, int32 ColA, int32 RowB, int32 Co
     
     if (!TileA || !TileB) return;
     
+    EColorType ColorA = TileA->GetColorType();
+    EColorType ColorB = TileB->GetColorType();
+    
     SetTile(RowA, ColA, TileB);
     SetTile(RowB, ColB, TileA);
     
     TileA->SetGridPosition(RowB, ColB);
     TileB->SetGridPosition(RowA, ColA);
     
-    float OffsetX = (GridCols - 1) * TileSize * 0.5f;
-    float OffsetY = (GridRows - 1) * TileSize * 0.5f;
+    TileA->SetColor(ColorB);
+    TileB->SetColor(ColorA);
+    
+    if (ColorA == EColorType::Empty)
+    {
+        EmptyRow = RowB;
+        EmptyCol = ColB;
+    }
+    else if (ColorB == EColorType::Empty)
+    {
+        EmptyRow = RowA;
+        EmptyCol = ColA;
+    }
+    
+    float OffsetX = (GridSize - 1) * TileSize * 0.5f;
+    float OffsetY = (GridSize - 1) * TileSize * 0.5f;
     
     FVector NewPosA(ColB * TileSize - OffsetX, RowB * TileSize - OffsetY, 0.0f);
     FVector NewPosB(ColA * TileSize - OffsetX, RowA * TileSize - OffsetY, 0.0f);
     
-    TileA->MoveToLocation(NewPosA);
-    TileB->MoveToLocation(NewPosB);
+    TileA->SetActorLocation(NewPosA);
+    TileB->SetActorLocation(NewPosB);
 }
 
 void AGridPuzzleGameMode::TryMoveTile(int32 Row, int32 Col)
 {
-    UE_LOG(LogTemp, Warning, TEXT("TryMoveTile called at (%d, %d)"), Row, Col);
-    
-    if (Row < 0 || Row >= GridRows || Col < 0 || Col >= GridCols)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Out of bounds!"));
-        return;
-    }
-    
-    if (IsBlackCell(Row, Col))
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Black cell!"));
-        return;
-    }
+    if (Row < 0 || Row >= GridSize || Col < 0 || Col >= GridSize) return;
     
     AGridPuzzleTile* Tile = GetTile(Row, Col);
-    if (!Tile)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("No tile at this position!"));
-        return;
-    }
+    if (!Tile) return;
     
-    // Нельзя двигать пустые клетки
-    if (Tile->GetColorType() == EColorType::Empty)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Cannot move empty tile!"));
-        return;
-    }
+    if (Tile->GetColorType() == EColorType::Empty) return;
     
-    // Ищем соседнюю пустую клетку
-    TArray<FIntPoint> AdjacentEmpty = GetAdjacentEmptyCells(Row, Col);
-    
-    if (AdjacentEmpty.Num() > 0)
+    if (IsAdjacent(Row, Col, EmptyRow, EmptyCol))
     {
-        FIntPoint Target = AdjacentEmpty[0];
-        UE_LOG(LogTemp, Warning, TEXT("Moving tile from (%d, %d) to empty cell at (%d, %d)"), 
-            Row, Col, Target.X, Target.Y);
-        SwapTiles(Row, Col, Target.X, Target.Y);
+        SwapTiles(Row, Col, EmptyRow, EmptyCol);
         CheckVictory();
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("No empty cell adjacent to (%d, %d)!"), Row, Col);
     }
 }
 
 void AGridPuzzleGameMode::CheckVictory()
 {
-    for (int32 i = 0; i < GridRows; i++)
+    for (int32 i = 0; i < GridSize; i++)
     {
-        for (int32 j = 0; j < GridCols; j++)
+        for (int32 j = 0; j < GridSize; j++)
         {
-            if (IsBlackCell(i, j)) continue;
-            
             AGridPuzzleTile* Tile = GetTile(i, j);
             if (!Tile) continue;
             
             EColorType TileColor = Tile->GetColorType();
             if (TileColor == EColorType::Empty) continue;
             
-            EColorType RequiredColor = GetZoneColor(i, j);
+            EColorType RequiredColor = GetColumnColor(j);
             
-            if (RequiredColor != EColorType::Empty && RequiredColor != EColorType::Black)
+            if (TileColor != RequiredColor)
             {
-                if (TileColor != RequiredColor)
-                {
-                    return;
-                }
+                return;
             }
         }
     }
     
     OnVictory.Broadcast();
-    UE_LOG(LogTemp, Warning, TEXT("VICTORY!"));
 }
 
 void AGridPuzzleGameMode::ShuffleTiles(int32 MovesCount)
 {
     for (int32 Move = 0; Move < MovesCount; Move++)
     {
-        TArray<FIntPoint> MovableTiles;
+        TArray<FIntPoint> Neighbors;
         
-        // Находим все цветные клетки, у которых есть соседняя пустая
-        for (int32 i = 0; i < GridRows; i++)
-        {
-            for (int32 j = 0; j < GridCols; j++)
-            {
-                if (IsBlackCell(i, j)) continue;
-                
-                AGridPuzzleTile* Tile = GetTile(i, j);
-                if (!Tile) continue;
-                
-                if (Tile->GetColorType() != EColorType::Empty)
-                {
-                    TArray<FIntPoint> AdjacentEmpty = GetAdjacentEmptyCells(i, j);
-                    if (AdjacentEmpty.Num() > 0)
-                    {
-                        MovableTiles.Add(FIntPoint(i, j));
-                    }
-                }
-            }
-        }
+        if (EmptyRow > 0) Neighbors.Add(FIntPoint(EmptyRow - 1, EmptyCol));
+        if (EmptyRow < GridSize - 1) Neighbors.Add(FIntPoint(EmptyRow + 1, EmptyCol));
+        if (EmptyCol > 0) Neighbors.Add(FIntPoint(EmptyRow, EmptyCol - 1));
+        if (EmptyCol < GridSize - 1) Neighbors.Add(FIntPoint(EmptyRow, EmptyCol + 1));
         
-        if (MovableTiles.Num() > 0)
+        if (Neighbors.Num() > 0)
         {
-            int32 RandomIndex = FMath::RandRange(0, MovableTiles.Num() - 1);
-            FIntPoint TilePos = MovableTiles[RandomIndex];
-            TArray<FIntPoint> EmptyCells = GetAdjacentEmptyCells(TilePos.X, TilePos.Y);
-            
-            if (EmptyCells.Num() > 0)
-            {
-                FIntPoint EmptyPos = EmptyCells[FMath::RandRange(0, EmptyCells.Num() - 1)];
-                SwapTiles(TilePos.X, TilePos.Y, EmptyPos.X, EmptyPos.Y);
-            }
+            int32 RandomIndex = FMath::RandRange(0, Neighbors.Num() - 1);
+            FIntPoint Target = Neighbors[RandomIndex];
+            SwapTiles(Target.X, Target.Y, EmptyRow, EmptyCol);
         }
     }
-    
-    UE_LOG(LogTemp, Warning, TEXT("Shuffle complete"));
 }
 
 void AGridPuzzleGameMode::ResetGame()
@@ -388,5 +366,6 @@ void AGridPuzzleGameMode::ResetGame()
     
     InitializeGrid();
     SpawnTiles();
-    ShuffleTiles(500);
+    SpawnColumnIndicators();
+    ShuffleTiles(1000);
 }

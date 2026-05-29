@@ -18,13 +18,13 @@ public:
     virtual void BeginPlay() override;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid Setup")
-    int32 GridRows;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid Setup")
-    int32 GridCols;
+    int32 GridSize;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid Setup")
     TSubclassOf<AGridPuzzleTile> TileActorClass;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid Setup")
+    TSubclassOf<AActor> ColumnIndicatorClass;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grid Setup")
     float TileSize;
@@ -37,26 +37,21 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Game Logic")
     void ResetGame();
 
-    UFUNCTION(BlueprintPure, Category = "Game Logic")
-    bool IsBlackCell(int32 Row, int32 Col) const;
-
 protected:
     void ValidateGridSize();
     void InitializeGrid();
     void SpawnTiles();
-    void GetEmptyTilePosition(int32& OutRow, int32& OutCol);
+    void SpawnColumnIndicators();
     bool IsAdjacent(int32 Row1, int32 Col1, int32 Row2, int32 Col2);
     void SwapTiles(int32 RowA, int32 ColA, int32 RowB, int32 ColB);
     void CheckVictory();
-    EColorType GetZoneColor(int32 Row, int32 Col) const;
-    void ShuffleTiles(int32 MovesCount = 500);
-    bool IsEmptyCell(int32 Row, int32 Col) const;
-    TArray<FIntPoint> GetAdjacentEmptyCells(int32 Row, int32 Col);
+    EColorType GetColumnColor(int32 ColIndex) const;
+    void ShuffleTiles(int32 MovesCount = 1000);
 
     UPROPERTY()
     TArray<AGridPuzzleTile*> Tiles;
     
-    int32 GetIndex(int32 Row, int32 Col) const { return Row * GridCols + Col; }
+    int32 GetIndex(int32 Row, int32 Col) const { return Row * GridSize + Col; }
     AGridPuzzleTile* GetTile(int32 Row, int32 Col) const 
     { 
         int32 Index = GetIndex(Row, Col);
