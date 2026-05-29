@@ -98,17 +98,17 @@ void AGridPuzzleTile::UpdateMaterialColor()
     FLinearColor Color;
     switch (ColorType)
     {
-    case EColorType::Red:     Color = FLinearColor(1.0f, 0.0f, 0.0f); break;      // Красный
-    case EColorType::Orange:  Color = FLinearColor(1.0f, 0.5f, 0.0f); break;      // Оранжевый
-    case EColorType::Yellow:  Color = FLinearColor(1.0f, 1.0f, 0.0f); break;      // Жёлтый
-    case EColorType::Green:   Color = FLinearColor(0.0f, 1.0f, 0.0f); break;      // Зелёный
-    case EColorType::Cyan:    Color = FLinearColor(0.0f, 1.0f, 1.0f); break;      // Голубой
-    case EColorType::Blue:    Color = FLinearColor(0.0f, 0.0f, 1.0f); break;      // Синий
-    case EColorType::Purple:  Color = FLinearColor(0.5f, 0.0f, 0.5f); break;      // Фиолетовый
-    case EColorType::Pink:    Color = FLinearColor(1.0f, 0.75f, 0.8f); break;     // Розовый
-    case EColorType::Magenta: Color = FLinearColor(1.0f, 0.0f, 1.0f); break;      // Пурпурный
-    case EColorType::Empty:   Color = FLinearColor(0.2f, 0.2f, 0.2f, 1.0f); break; // Тёмно-серый
-    default:                  Color = FLinearColor::White; break;
+    case EColorType::Red:        Color = FLinearColor(1.00f, 0.00f, 0.00f); break;  // Чистый красный
+    case EColorType::Orange:     Color = FLinearColor(1.00f, 0.40f, 0.00f); break;  // Чистый оранжевый
+    case EColorType::Yellow:     Color = FLinearColor(1.00f, 1.00f, 0.00f); break;  // Чистый жёлтый
+    case EColorType::Green:      Color = FLinearColor(0.00f, 1.00f, 0.00f); break;  // Чистый зелёный
+    case EColorType::Cyan:       Color = FLinearColor(0.00f, 1.00f, 1.00f); break;  // Чистый голубой
+    case EColorType::Blue:       Color = FLinearColor(0.00f, 0.00f, 0.80f); break;  // Чистый синий
+    case EColorType::Purple:     Color = FLinearColor(0.50f, 0.00f, 1.00f); break;  // Чистый фиолетовый
+    case EColorType::DarkBlue:   Color = FLinearColor(0.00f, 0.00f, 0.30f); break;  // Тёмно-синий
+    case EColorType::Magenta:    Color = FLinearColor(1.00f, 0.00f, 1.00f); break;  // Чистый пурпурный
+    case EColorType::Empty:      Color = FLinearColor(0.10f, 0.10f, 0.10f); break;  // Почти чёрный
+    default:                     Color = FLinearColor(1.00f, 1.00f, 1.00f); break;  // Белый
     }
     
     DynamicMaterial->SetVectorParameterValue(TEXT("BaseColor"), Color);

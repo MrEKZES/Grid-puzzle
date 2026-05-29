@@ -17,7 +17,7 @@ enum class EColorType : uint8
 	Cyan    UMETA(DisplayName = "Cyan"),
 	Blue    UMETA(DisplayName = "Blue"),
 	Purple  UMETA(DisplayName = "Purple"),
-	Pink    UMETA(DisplayName = "Pink"),
+	DarkBlue    UMETA(DisplayName = "DarkBlue"),
 	Magenta UMETA(DisplayName = "Magenta"),
 	White   UMETA(DisplayName = "White")
 };

@@ -135,7 +135,7 @@ EColorType AGridPuzzleGameMode::GetColumnColor(int32 ColIndex) const
     case 4:  return EColorType::Cyan;
     case 5:  return EColorType::Blue;
     case 6:  return EColorType::Purple;
-    case 7:  return EColorType::Pink;
+    case 7:  return EColorType::DarkBlue;
     case 8:  return EColorType::Magenta;
     default: return EColorType::White;
     }
@@ -190,16 +190,16 @@ void AGridPuzzleGameMode::SpawnColumnIndicators()
         FLinearColor IndicatorColor;
         switch (ColumnColor)
         {
-            case EColorType::Red:     IndicatorColor = FLinearColor(1.0f, 0.0f, 0.0f); break;
-            case EColorType::Orange:  IndicatorColor = FLinearColor(1.0f, 0.5f, 0.0f); break;
-            case EColorType::Yellow:  IndicatorColor = FLinearColor(1.0f, 1.0f, 0.0f); break;
-            case EColorType::Green:   IndicatorColor = FLinearColor(0.0f, 1.0f, 0.0f); break;
-            case EColorType::Cyan:    IndicatorColor = FLinearColor(0.0f, 1.0f, 1.0f); break;
-            case EColorType::Blue:    IndicatorColor = FLinearColor(0.0f, 0.0f, 1.0f); break;
-            case EColorType::Purple:  IndicatorColor = FLinearColor(0.5f, 0.0f, 0.5f); break;
-            case EColorType::Pink:    IndicatorColor = FLinearColor(1.0f, 0.75f, 0.8f); break;
-            case EColorType::Magenta: IndicatorColor = FLinearColor(1.0f, 0.0f, 1.0f); break;
-            default:                  IndicatorColor = FLinearColor::White; break;
+        case EColorType::Red:        IndicatorColor = FLinearColor(1.00f, 0.00f, 0.00f); break;
+        case EColorType::Orange:     IndicatorColor = FLinearColor(1.00f, 0.40f, 0.00f); break;
+        case EColorType::Yellow:     IndicatorColor = FLinearColor(1.00f, 1.00f, 0.00f); break;
+        case EColorType::Green:      IndicatorColor = FLinearColor(0.00f, 1.00f, 0.00f); break;
+        case EColorType::Cyan:       IndicatorColor = FLinearColor(0.00f, 1.00f, 1.00f); break;
+        case EColorType::Blue:       IndicatorColor = FLinearColor(0.00f, 0.00f, 0.80f); break;
+        case EColorType::Purple:     IndicatorColor = FLinearColor(0.50f, 0.00f, 1.00f); break;
+        case EColorType::DarkBlue:   IndicatorColor = FLinearColor(0.00f, 0.00f, 0.30f); break;
+        case EColorType::Magenta:    IndicatorColor = FLinearColor(1.00f, 0.00f, 1.00f); break;
+        default:                     IndicatorColor = FLinearColor(1.00f, 1.00f, 1.00f); break;
         }
         
         FVector Location(
